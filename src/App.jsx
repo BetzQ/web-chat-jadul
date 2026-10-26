@@ -44,7 +44,7 @@ export default function App() {
                 localStorage.setItem('chat_user', u)
                 setUser(u)
               }}
-              className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white text-xl font-semibold py-6 rounded-none shadow-none active:bg-neutral-600"
+              className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white text-2xl font-bold py-8 rounded-none shadow-none active:bg-neutral-600 w-full"
             >
               {u}
             </button>
@@ -117,9 +117,9 @@ export default function App() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendText()}
           placeholder="Ketik pesan..."
-          className="flex-1 bg-neutral-800 text-white border border-neutral-600 px-3 py-2 text-sm rounded-none outline-none focus:border-neutral-400"
+          className="flex-1 bg-neutral-800 text-white border border-neutral-600 px-3 py-3 text-lg rounded-none outline-none focus:border-neutral-400"
         />
-        <button onClick={sendText} className="bg-neutral-200 text-black font-bold px-4 py-2 text-sm rounded-none hover:bg-white">Kirim</button>
+        <button onClick={sendText} className="bg-neutral-200 text-black font-bold px-6 py-3 text-lg rounded-none hover:bg-white">Kirim</button>
       </footer>
     </div>
   )
