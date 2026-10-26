@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase.js'
 
-const USERS = ["ibu", "avwan", "dayat", "habsyi"]
+const USERS = ["Ibu", "Avwan", "Dayat", "Habsyi"]
 
 export default function App() {
   const [user, setUser] = useState(() => localStorage.getItem('chat_user') || null)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
+  const fileRef = useRef(null)
   const bottomRef = useRef(null)
 
-  // Polling messages every 1000ms
   useEffect(() => {
     let active = true
     const fetch = async () => {
@@ -25,13 +25,9 @@ export default function App() {
     }
     fetch()
     const id = setInterval(fetch, 1000)
-    return () => {
-      active = false
-      clearInterval(id)
-    }
+    return () => { active = false; clearInterval(id) }
   }, [])
 
-  // Auto scroll bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'auto' })
   }, [messages])
@@ -58,7 +54,7 @@ export default function App() {
     )
   }
 
-  const send = async () => {
+  const sendText = async () => {
     const text = input.trim()
     if (!text) return
     try {
@@ -67,53 +63,63 @@ export default function App() {
     } catch (e) {}
   }
 
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const path = file.name
+      const { error: upErr } = await supabase.storage.from('chat-media').upload(path, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+      if (upErr) return
+      const { data } = supabase.storage.from('chat-media').getPublicUrl(path)
+      if (data?.publicUrl) {
+        await supabase.from('messages').insert({ username: user, text: data.publicUrl })
+      }
+    } catch (e) {}
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const isImage = (t) => /(\.jpg|\.jpeg|\.png|\.gif)$/i.test(t)
   const isVideo = (t) => /(\.mp4|\.webm)$/i.test(t)
 
   return (
     <div className="h-screen flex flex-col bg-neutral-950 text-neutral-100">
-      {/* Header */}
       <header className="bg-neutral-900 border-b border-neutral-800 px-4 py-3 shrink-0">
         <div className="font-bold text-base">Chat Kelompok</div>
         <div className="text-xs text-neutral-400">{user}</div>
       </header>
 
-      {/* Messages */}
       <main className="flex-1 overflow-y-auto p-3 space-y-3">
         {messages.map((m) => (
           <div key={m.id || Math.random()} className="text-sm leading-snug">
             <span className="font-semibold text-neutral-300">{m.username}:</span>{" "}
             <span className="text-neutral-100 break-words">{m.text}</span>
             {isImage(m.text) && (
-              <div className="mt-1">
-                <img src={m.text} alt="media" className="max-w-[150px] border border-neutral-700 bg-neutral-900" loading="lazy" />
-              </div>
+              <div className="mt-1"><img src={m.text} alt="media" className="max-w-[150px] h-auto border border-neutral-700 bg-neutral-900" loading="lazy" /></div>
             )}
             {isVideo(m.text) && (
-              <div className="mt-1">
-                <video src={m.text} controls className="max-w-[150px] bg-neutral-900 border border-neutral-700" preload="none" />
-              </div>
+              <div className="mt-1"><video src={m.text} controls className="max-w-[150px] h-auto bg-neutral-900 border border-neutral-700" preload="none" /></div>
             )}
           </div>
         ))}
         <div ref={bottomRef} />
       </main>
 
-      {/* Input */}
       <footer className="bg-neutral-900 border-t border-neutral-800 p-2 flex gap-2 shrink-0">
+        <label className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-600 text-white text-xs font-bold px-3 py-2 rounded-none cursor-pointer select-none" title="Upload file">
+          + File
+          <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
+        </label>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
+          onKeyDown={(e) => e.key === 'Enter' && sendText()}
           placeholder="Ketik pesan..."
           className="flex-1 bg-neutral-800 text-white border border-neutral-600 px-3 py-2 text-sm rounded-none outline-none focus:border-neutral-400"
         />
-        <button
-          onClick={send}
-          className="bg-neutral-200 text-black font-bold px-4 py-2 text-sm rounded-none hover:bg-white"
-        >
-          Kirim
-        </button>
+        <button onClick={sendText} className="bg-neutral-200 text-black font-bold px-4 py-2 text-sm rounded-none hover:bg-white">Kirim</button>
       </footer>
     </div>
   )
